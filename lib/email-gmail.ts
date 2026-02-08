@@ -1,8 +1,15 @@
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Configurar transporter de Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+})
 
-export async function sendRequestNotification(
+export async function sendRequestNotificationGmail(
   request: {
     id: string
     workerName: string
@@ -11,16 +18,16 @@ export async function sendRequestNotification(
     amount: number
     approvalToken: string | null
   },
-  recipientEmail: string // Nuevo parámetro
+  recipientEmail: string
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const approveUrl = `${baseUrl}/api/approve?token=${request.approvalToken}`
   const rejectUrl = `${baseUrl}/api/reject?token=${request.approvalToken}`
 
   try {
-    await resend.emails.send({
-      from: 'RequestFlow <onboarding@resend.dev>',
-      to: recipientEmail, // Usar el email que recibimos
+    const info = await transporter.sendMail({
+      from: `"RequestFlow" <${process.env.GMAIL_USER}>`,
+      to: recipientEmail,
       subject: `Nueva Solicitud de Combustible - ${request.workerName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -52,12 +59,13 @@ export async function sendRequestNotification(
             </a>
           </p>
         </div>
-      `
+      `,
     })
-    
+
+    console.log('✅ Email enviado:', info.messageId)
     return { success: true }
   } catch (error) {
-    console.error('Error sending email:', error)
+    console.error('❌ Error enviando email:', error)
     return { success: false, error }
   }
 }

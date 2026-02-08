@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { sendRequestNotification } from '@/lib/email'
+import { sendRequestNotificationGmail } from '@/lib/email-gmail'
 import { revalidatePath } from 'next/cache'
 
 export async function createFuelRequest(formData: FormData) {
@@ -10,6 +10,7 @@ export async function createFuelRequest(formData: FormData) {
     const workerName = formData.get('workerName') as string
     const workerDNI = formData.get('workerDNI') as string
     const amount = parseFloat(formData.get('amount') as string)
+    const managerEmail = (formData.get('managerEmail') as string)?.trim()
 
     if (!plateNumber || !workerName || !workerDNI || !amount) {
       return { error: 'Todos los campos son requeridos' }
@@ -19,16 +20,38 @@ export async function createFuelRequest(formData: FormData) {
       return { error: 'El monto debe ser mayor a 0' }
     }
 
+    // Validar email si se proporciona
+    if (managerEmail && !isValidEmail(managerEmail)) {
+      return { error: 'Email inválido' }
+    }
+
     const request = await db.fuelRequest.create({
       data: {
         plateNumber,
         workerName,
         workerDNI,
         amount,
+        managerEmail: managerEmail || null,
       }
     })
 
-    await sendRequestNotification(request)
+    // Determinar qué email usar
+    const emailToSend = managerEmail || process.env.MANAGER_EMAIL!
+    
+    // IMPORTANTE: Pasar el email como segundo parámetro
+    const emailResult = await sendRequestNotificationGmail(request, emailToSend)
+    
+    if (!emailResult.success) {
+      console.error('❌ Error enviando email:', emailResult.error)
+      // La solicitud se guardó pero el email falló
+      return { 
+        success: true, 
+        warning: 'Solicitud guardada pero no se pudo enviar el email',
+        requestId: request.id 
+      }
+    }
+
+    console.log('✅ Email enviado exitosamente') // Debug log
 
     revalidatePath('/requests')
     
@@ -41,6 +64,12 @@ export async function createFuelRequest(formData: FormData) {
     console.error('Error creating request:', error)
     return { error: 'Error al crear la solicitud' }
   }
+}
+
+// Helper para validar email
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
 }
 
 export async function updateRequestStatus(

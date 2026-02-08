@@ -15,15 +15,18 @@ enum RequestStatus {
 }
 
 model FuelRequest {
-  id            String        @id @default(cuid())
-  plateNumber   String
-  workerName    String
-  workerDNI     String
-  amount        Float
-  status        RequestStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  plateNumber     String
+  workerName      String
+  workerDNI       String
+  amount          Float
+  status          RequestStatus @default(PENDING)
+  approvalToken   String?       @unique @default(cuid())
+  managerEmail    String?       // Nuevo: email personalizado del manager
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   
   @@index([status])
   @@index([createdAt])
+  @@index([approvalToken])
 }

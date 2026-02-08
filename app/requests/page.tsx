@@ -58,6 +58,7 @@ export default async function RequestsPage() {
                       <TableHead>Monto</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Fecha</TableHead>
+                      <TableHead>Email Enviado</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -76,6 +77,9 @@ export default async function RequestsPage() {
                             month: 'short',
                             day: 'numeric',
                           })}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {request.managerEmail || 'Email predeterminado'}
                         </TableCell>
                       </TableRow>
                     ))}
