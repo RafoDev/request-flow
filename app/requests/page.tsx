@@ -1,4 +1,4 @@
-
+import { getRequests } from '../actions/requests'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
-import { getRequests } from '../actions/requests'
+import { DownloadInvoiceButton } from './download-button'
 
 export default async function RequestsPage() {
   const requests = await getRequests()
@@ -58,7 +58,7 @@ export default async function RequestsPage() {
                       <TableHead>Monto</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Fecha</TableHead>
-                      <TableHead>Email Enviado</TableHead>
+                      <TableHead>Factura</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -78,8 +78,12 @@ export default async function RequestsPage() {
                             day: 'numeric',
                           })}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {request.managerEmail || 'Email predeterminado'}
+                        <TableCell>
+                          {request.status === 'APPROVED' ? (
+                            <DownloadInvoiceButton requestId={request.id} />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

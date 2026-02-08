@@ -61,8 +61,6 @@ export async function sendRequestNotificationGmail(
         </div>
       `,
     })
-
-    console.log('✅ Email enviado:', info.messageId)
     return { success: true }
   } catch (error) {
     console.error('❌ Error enviando email:', error)

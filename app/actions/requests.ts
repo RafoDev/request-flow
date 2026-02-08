@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db'
 import { sendRequestNotificationGmail } from '@/lib/email-gmail'
+import { generateInvoicePDF, generateInvoiceNumber } from '@/lib/generate-invoice'
 import { revalidatePath } from 'next/cache'
 
 export async function createFuelRequest(formData: FormData) {
@@ -20,7 +21,6 @@ export async function createFuelRequest(formData: FormData) {
       return { error: 'El monto debe ser mayor a 0' }
     }
 
-    // Validar email si se proporciona
     if (managerEmail && !isValidEmail(managerEmail)) {
       return { error: 'Email inválido' }
     }
@@ -35,23 +35,18 @@ export async function createFuelRequest(formData: FormData) {
       }
     })
 
-    // Determinar qué email usar
     const emailToSend = managerEmail || process.env.MANAGER_EMAIL!
     
-    // IMPORTANTE: Pasar el email como segundo parámetro
     const emailResult = await sendRequestNotificationGmail(request, emailToSend)
     
     if (!emailResult.success) {
       console.error('❌ Error enviando email:', emailResult.error)
-      // La solicitud se guardó pero el email falló
       return { 
         success: true, 
         warning: 'Solicitud guardada pero no se pudo enviar el email',
         requestId: request.id 
       }
     }
-
-    console.log('✅ Email enviado exitosamente') // Debug log
 
     revalidatePath('/requests')
     
@@ -66,7 +61,6 @@ export async function createFuelRequest(formData: FormData) {
   }
 }
 
-// Helper para validar email
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
@@ -79,7 +73,10 @@ export async function updateRequestStatus(
   try {
     await db.fuelRequest.update({
       where: { id: requestId },
-      data: { status }
+      data: { 
+        status,
+        approvedAt: status === 'APPROVED' ? new Date() : null
+      }
     })
 
     revalidatePath('/manager')
@@ -95,7 +92,7 @@ export async function updateRequestStatus(
 export async function getRequests() {
   try {
     const requests = await db.fuelRequest.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
     return requests
   } catch (error) {

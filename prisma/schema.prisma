@@ -22,9 +22,10 @@ model FuelRequest {
   amount          Float
   status          RequestStatus @default(PENDING)
   approvalToken   String?       @unique @default(cuid())
-  managerEmail    String?       // Nuevo: email personalizado del manager
+  managerEmail    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  approvedAt      DateTime?     // Nuevo: cuando fue aprobada
   
   @@index([status])
   @@index([createdAt])
